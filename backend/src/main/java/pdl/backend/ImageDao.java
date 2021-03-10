@@ -15,6 +15,14 @@ import java.io.File;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Repository;
 import pdl.lib.GrayLevelProcessing;
+
+import net.imglib2.img.array.ArrayImgFactory;
+import io.scif.img.ImgOpener;
+import io.scif.img.ImgSaver;
+import net.imglib2.img.Img;
+import net.imglib2.type.numeric.integer.UnsignedByteType;
+import io.scif.img.ImgIOException;
+
 @Repository
 public class ImageDao implements Dao<Image> {
 
@@ -45,7 +53,26 @@ public class ImageDao implements Dao<Image> {
 
   @Override
   public List<Image> retrieveAll() {
-    GrayLevelProcessing.toto();
+    final ArrayImgFactory<UnsignedByteType> factory = new ArrayImgFactory<>(new UnsignedByteType());
+		final ImgOpener imgOpener = new ImgOpener();
+    final ClassPathResource imgFile = new ClassPathResource("test1.jpg");
+    try {
+      File file = imgFile.getFile() ;
+      final Img<UnsignedByteType> input = (Img<UnsignedByteType>) imgOpener.openImgs(file.getAbsolutePath(), factory).get(0);
+      imgOpener.context().dispose();
+      GrayLevelProcessing.changeLuminosityCursorClassic(input, 50);
+      File path = new File (file.getParent() + "/vmodif.jpg") ;
+      // clear the file if it already exists.
+      if (path.exists()) {
+        path.delete();
+      }
+      ImgSaver imgSaver = new ImgSaver();
+      imgSaver.saveImg(path.getAbsolutePath(), input);
+      imgSaver.context().dispose();
+      System.out.println("okok ; enregistré en " + path.getAbsolutePath()) ;
+    } catch (IOException e) {
+      System.err.println("error") ;
+    }
     return new ArrayList<Image>(images.values());
   }
 
@@ -61,6 +88,8 @@ public class ImageDao implements Dao<Image> {
     if (params.length == 0 || !params[0].equals("recreate")){
       return Optional.empty() ;
     }
+
+
     Image copy = new Image(img.getName(), img.getData(), img.getWidth(), img.getHeight()) ;
     return Optional.of(copy) ;
   }
