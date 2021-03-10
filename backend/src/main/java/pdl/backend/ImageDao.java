@@ -14,7 +14,7 @@ import java.io.File;
 
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Repository;
-
+import pdl.lib.GrayLevelProcessing;
 @Repository
 public class ImageDao implements Dao<Image> {
 
@@ -45,6 +45,7 @@ public class ImageDao implements Dao<Image> {
 
   @Override
   public List<Image> retrieveAll() {
+    GrayLevelProcessing.toto();
     return new ArrayList<Image>(images.values());
   }
 
