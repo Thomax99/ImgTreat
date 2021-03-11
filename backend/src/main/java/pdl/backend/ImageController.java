@@ -3,6 +3,17 @@ package pdl.backend;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import io.scif.img.ImgOpener ;
+import io.scif.img.ImgSaver ;
+import org.springframework.core.io.ClassPathResource;
+
+import net.imglib2.img.array.ArrayImgs;
+import net.imglib2.img.array.ArrayImgFactory;
+import net.imglib2.img.basictypeaccess.array.ByteArray;
+
+import net.imglib2.img.Img;
+
 import java.util.List;
 import java.util.Optional;
 import java.awt.image.BufferedImage;
@@ -27,12 +38,16 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import net.imglib2.type.numeric.integer.UnsignedByteType;
 
+import pdl.lib.GrayLevelProcessing;
 
 import org.springframework.util.MimeType ;
 
-
-
+import io.scif.formats.JPEGFormat ;
+import io.scif.Reader ;
+import org.scijava.io.location.Location ;
+import org.scijava.io.location.BytesLocation ;
 
 @RestController
 public class ImageController {
@@ -47,10 +62,46 @@ public class ImageController {
     this.imageDao = imageDao;
   }
   @RequestMapping(value = "/images/{id}", method = RequestMethod.GET)
-  public ResponseEntity<?> getImage(@PathVariable("id") long id) {
+  public ResponseEntity<?> getImage(@PathVariable("id") long id, @RequestParam(value = "algorithm", required = false) String algorithm, 
+  @RequestParam(value = "p1", required = false) String param1, @RequestParam(value = "p2", required = false) String param2) {
     Optional<Image> back = imageDao.retrieve(id) ;
     if (back.isEmpty())
       return ResponseEntity.notFound().build() ;
+    if (algorithm == null) {
+      // pas d'algo : requete get simple
+      return ResponseEntity.ok().contentType(back.get().getType()).body(back.get().getData()) ;
+    }
+    // ici algo non nul
+    if (param1 == null && param2 != null){
+      return ResponseEntity.badRequest().build() ;
+    }
+    if (algorithm.equals("increaseLuminosity")){
+      String[] strs = param1.split("=") ;
+      if (strs[0].equals("gain")){
+        try {
+          BytesLocation loc = new BytesLocation(back.get().getData(), back.get().getName()) ;
+          BytesLocation locBack = new BytesLocation(back.get().getData().length, "modif."+back.get().getType().getSubtype()) ;
+          ArrayImgFactory<UnsignedByteType> factory = new ArrayImgFactory<>(new UnsignedByteType ()) ;
+          ImgOpener imgOpener = new ImgOpener() ;
+          Img<UnsignedByteType> input = (Img<UnsignedByteType>) imgOpener.openImgs(loc, factory).get(0) ;
+          imgOpener.context().dispose() ;
+          System.out.println(input) ;
+          GrayLevelProcessing.changeLuminosityRandomAccessVerifColored(input, 50);
+          System.out.println("ok") ;
+          ImgSaver saver = new ImgSaver() ;
+          saver.saveImg(locBack, input) ;
+          saver.context().dispose() ;
+          byte[] backData = locBack.getByteBank().toByteArray() ;
+          return ResponseEntity.ok().contentType(back.get().getType()).body(backData) ;
+        } catch (NumberFormatException e) {
+          return ResponseEntity.badRequest().build() ;
+        } catch (Exception e) { // really really ugggggggglyyyyyy
+          e.printStackTrace();
+          System.out.println("here") ;
+          return ResponseEntity.badRequest().build() ;
+        }
+      }
+    }
     return ResponseEntity.ok().contentType(back.get().getType()).body(back.get().getData()) ;
   }
   @RequestMapping(value = "/images/{id}", method = RequestMethod.DELETE)
@@ -77,8 +128,9 @@ public class ImageController {
         BufferedImage image = ImageIO.read(file.getInputStream());
         long height = (long) image.getHeight();
         long width = (long) image.getWidth();
+        long nbSlices = (image.getType() == BufferedImage.TYPE_BYTE_GRAY || image.getType() == BufferedImage.TYPE_USHORT_GRAY ) ? 1 : 3 ;
         MimeType type = MimeType.valueOf(file.getContentType()) ;
-        Image img = new Image(file.getResource().getFilename(), file.getBytes(), width, height, new MediaType(type.getType(), type.getSubtype())) ;
+        Image img = new Image(file.getResource().getFilename(), file.getBytes(), width, height, nbSlices, new MediaType(type.getType(), type.getSubtype())) ;
         imageDao.create(img);
       }catch (IOException e){
         System.err.println("Erreur de lecture du fichier ...") ;
@@ -92,7 +144,7 @@ public class ImageController {
   public ArrayNode getImageList() {
     ArrayNode nodes = mapper.createArrayNode();
     for (Image img: imageDao.retrieveAll()){
-      nodes.add(mapper.valueToTree(new ImageInfos(img.getName(), img.getId(), img.getWidth(), img.getHeight(), img.getType()))) ;
+      nodes.add(mapper.valueToTree(new ImageInfos(img.getName(), img.getId(), img.getWidth(), img.getHeight(), img.getNbSlices(), img.getType()))) ;
     }
     return nodes;
   }
@@ -101,8 +153,9 @@ public class ImageController {
     Optional<Image> back = imageDao.retrieve(id) ;
     if (back.isEmpty())
       return ResponseEntity.notFound().build() ;
-    JsonNode node = mapper.valueToTree(new ImageInfos(back.get().getName(), back.get().getId(), back.get().getWidth(), back.get().getHeight(), back.get().getType())) ;
+    JsonNode node = mapper.valueToTree(new ImageInfos(back.get().getName(), back.get().getId(), back.get().getWidth(), back.get().getHeight(), back.get().getNbSlices(), back.get().getType())) ;
     return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(node);
+  }
     /*
     try {
       File file = imgFile.getFile() ;
@@ -122,5 +175,4 @@ public class ImageController {
       System.err.println("error") ;
     }
     */
-  }
 }

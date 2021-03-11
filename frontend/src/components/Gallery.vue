@@ -2,7 +2,7 @@
   <div class="Gallery">
     <h3>Images disponibles</h3>
     <button class="Refresh__Button" @click="refresh()">Rafraichir les images</button>
-    <ul>
+    <ul v-show="showable">
       <li v-for="resp in response" :key="resp">
         <img src="" :id="'img'+ resp.id" @click="callback(resp)"/>
       </li>
@@ -20,17 +20,25 @@ export default {
   data () {
     return {
       response: [],
-      imgHeight: 200
+      imgHeight: 200,
+      showable: false
     }
   },
   methods: {
     refresh () {
+      this.showable = false
       callRestServiceGetLstImg(this.updateImage, this.callbackError)
     },
     updateOneImage (data) {
       document.querySelector('#img' + data.id + '').setAttribute('src', data.result)
       document.querySelector('#img' + data.id + '').setAttribute('height', this.imgHeight)
       document.querySelector('#img' + data.id + '').setAttribute('width', this.imgHeight * data.width / data.height)
+      if (data.id === this.response[this.response.length-1].id) {
+        // cette instruction est la simplement pour eviter un affichage "image apres image" mais plutot que toutes les images de
+        // la galerie s'affichent a peu pres en meme temps (on suppose que les requetes se font a peu pres dans l'ordre ou elles
+        // ont ete emises )
+        this.showable = true
+      }
     },
     updateImage (responses) {
       this.response = responses
@@ -43,6 +51,7 @@ export default {
           width: width,
           height: height
         }
+        document.querySelector('#img' + image.id + '').setAttribute('alt', image.id)
         callRestServiceGetImg(image.id, this.updateOneImage, data, this.callbackError)
       }
     },
