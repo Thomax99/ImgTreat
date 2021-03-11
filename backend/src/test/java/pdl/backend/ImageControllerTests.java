@@ -41,55 +41,6 @@ public class ImageControllerTests {
 	private ObjectMapper objectMapper;
 	@Test
 	@Order(1)
-	public void getImageListShouldReturnSuccess() throws Exception {
-		mockMvc.perform(get("/images")).andExpect(status().isOk()) ;
-	}
-
-	@Test
-	@Order(2)
-	public void getImageShouldReturnNotFound() throws Exception {
-		mockMvc.perform(get("/images/2")).andExpect(status().isNotFound()) ;
-	}
-
-	@Test
-	@Order(3)
-	public void getImageShouldReturnSuccess() throws Exception {
-		mockMvc.perform(get("/images/0")).andExpect(status().isOk()) ;
-	}
-
-	@Test
-	@Order(4)
-	public void getImageInfosShouldReturnSuccess() throws Exception {
-		  mockMvc.perform(get("/images/infos/0")).andExpect(status().isOk()) ;
-	}
-	@Test
-	@Order(5)
-	public void getImageInfosShouldReturnNotFound() throws Exception {
-		  mockMvc.perform(get("/images/infos/1")).andExpect(status().isNotFound()) ;
-	}
-
-	@Test
-	@Order(6)
-	public void deleteImageShouldReturnBadRequest() throws Exception {
-		// la pertinence de ce test est a mon avis limitee : spring-boot retourne ceci automatiquement ;
-		// ce n'est pas nous qui decidons ce renvoi
-		mockMvc.perform(delete("/images/toto")).andExpect(status().isBadRequest()) ;
-	}
-
-	@Test
-	@Order(7)
-	public void deleteImageShouldReturnNotFound() throws Exception {
-		mockMvc.perform(delete("/images/1")).andExpect(status().isNotFound()) ;
-	}
-
-	@Test
-	@Order(8)
-	public void deleteImageShouldReturnSuccess() throws Exception {
-		mockMvc.perform(delete("/images/0")).andExpect(status().isOk()) ;
-	}
-
-	@Test
-	@Order(9)
 	public void createImageShouldReturnSuccess() throws Exception {
 		final ClassPathResource imgFile = new ClassPathResource("test1.jpg");
         byte [] fileContent = Files.readAllBytes(imgFile.getFile().toPath());
@@ -103,7 +54,7 @@ public class ImageControllerTests {
 	}
 
 	@Test
-	@Order(10)
+	@Order(2)
 	public void createImageShouldReturnUnsupportedMediaType() throws Exception {
 		MockMultipartFile mpf = new MockMultipartFile(
 			"file", 
@@ -114,7 +65,7 @@ public class ImageControllerTests {
 		  mockMvc.perform(multipart("/images").file(mpf)).andExpect(status().isUnsupportedMediaType()) ;
 	}
 	@Test
-	@Order(11)
+	@Order(3)
 	public void createImageShouldReturnUnprocessableEntity() throws Exception {
 		MockMultipartFile mpf = new MockMultipartFile(
 			"file", 
@@ -124,5 +75,53 @@ public class ImageControllerTests {
 		  );
 		  mockMvc.perform(multipart("/images").file(mpf)).andExpect(status().isUnprocessableEntity()) ;
 	}
-	
+	@Test
+	@Order(4)
+	public void getImageListShouldReturnSuccess() throws Exception {
+		mockMvc.perform(get("/images")).andExpect(status().isOk()) ;
+	}
+
+	@Test
+	@Order(5)
+	public void getImageShouldReturnNotFound() throws Exception {
+		mockMvc.perform(get("/images/120")).andExpect(status().isNotFound()) ;
+	}
+
+	@Test
+	@Order(6)
+	public void getImageShouldReturnSuccess() throws Exception {
+		mockMvc.perform(get("/images/1")).andExpect(status().isOk()) ;
+	}
+
+	@Test
+	@Order(7)
+	public void getImageInfosShouldReturnSuccess() throws Exception {
+	mockMvc.perform(get("/images/infos/1")).andExpect(status().isOk()) ;
+	}
+	@Test
+	@Order(8)
+	public void getImageInfosShouldReturnNotFound() throws Exception {
+		  mockMvc.perform(get("/images/infos/120")).andExpect(status().isNotFound()) ;
+	}
+
+	@Test
+	@Order(9)
+	public void deleteImageShouldReturnBadRequest() throws Exception {
+		// la pertinence de ce test est a mon avis limitee : spring-boot retourne ceci automatiquement ;
+		// ce n'est pas nous qui decidons ce renvoi
+		mockMvc.perform(delete("/images/toto")).andExpect(status().isBadRequest()) ;
+	}
+
+	@Test
+	@Order(10)
+	public void deleteImageShouldReturnNotFound() throws Exception {
+		mockMvc.perform(delete("/images/120")).andExpect(status().isNotFound()) ;
+	}
+
+	@Test
+	@Order(11)
+	public void deleteImageShouldReturnSuccess() throws Exception {
+		// if doesn't work, change 1 on 0
+		mockMvc.perform(delete("/images/1")).andExpect(status().isOk()) ;
+	}
 }

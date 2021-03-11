@@ -11,6 +11,7 @@ import java.net.URL;
 import java.awt.image.BufferedImage;
 import javax.imageio.ImageIO;
 import java.io.File;
+import org.springframework.http.MediaType;
 
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Repository;
@@ -36,7 +37,7 @@ public class ImageDao implements Dao<Image> {
       long height = (long) image.getHeight();
       long width = (long) image.getWidth();
       byte [] fileContent = Files.readAllBytes(imgFile.getFile().toPath());
-      Image img = new Image("logo.jpg", fileContent, width, height);
+      Image img = new Image("logo.jpg", fileContent, width, height, MediaType.IMAGE_JPEG);
       images.put(img.getId(), img);
     } catch (final IOException e) {
       e.printStackTrace();
@@ -56,23 +57,6 @@ public class ImageDao implements Dao<Image> {
     final ArrayImgFactory<UnsignedByteType> factory = new ArrayImgFactory<>(new UnsignedByteType());
 		final ImgOpener imgOpener = new ImgOpener();
     final ClassPathResource imgFile = new ClassPathResource("test1.jpg");
-    try {
-      File file = imgFile.getFile() ;
-      final Img<UnsignedByteType> input = (Img<UnsignedByteType>) imgOpener.openImgs(file.getAbsolutePath(), factory).get(0);
-      imgOpener.context().dispose();
-      GrayLevelProcessing.changeLuminosityCursorClassic(input, 50);
-      File path = new File (file.getParent() + "/vmodif.jpg") ;
-      // clear the file if it already exists.
-      if (path.exists()) {
-        path.delete();
-      }
-      ImgSaver imgSaver = new ImgSaver();
-      imgSaver.saveImg(path.getAbsolutePath(), input);
-      imgSaver.context().dispose();
-      System.out.println("okok ; enregistré en " + path.getAbsolutePath()) ;
-    } catch (IOException e) {
-      System.err.println("error") ;
-    }
     return new ArrayList<Image>(images.values());
   }
 
@@ -82,16 +66,8 @@ public class ImageDao implements Dao<Image> {
   }
 
   @Override
-  public Optional<Image> update(final Image img, final String[] params) {
-    // when updating, we recreate an image according to params
-    // we accept a param recreate for the moment and that is all
-    if (params.length == 0 || !params[0].equals("recreate")){
-      return Optional.empty() ;
-    }
-
-
-    Image copy = new Image(img.getName(), img.getData(), img.getWidth(), img.getHeight()) ;
-    return Optional.of(copy) ;
+  public void update(final Image img, final String[] params) {
+    // not used
   }
 
   @Override

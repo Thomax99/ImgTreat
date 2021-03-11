@@ -29,6 +29,10 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 
+import org.springframework.util.MimeType ;
+
+
+
 
 @RestController
 public class ImageController {
@@ -42,25 +46,26 @@ public class ImageController {
   public ImageController(ImageDao imageDao) {
     this.imageDao = imageDao;
   }
-  @RequestMapping(value = "/images/{id}", method = RequestMethod.GET, produces = MediaType.IMAGE_JPEG_VALUE)
+  @RequestMapping(value = "/images/{id}", method = RequestMethod.GET)
   public ResponseEntity<?> getImage(@PathVariable("id") long id) {
     Optional<Image> back = imageDao.retrieve(id) ;
     if (back.isEmpty())
       return ResponseEntity.notFound().build() ;
-    return ResponseEntity.ok().contentType(MediaType.IMAGE_JPEG).body(back.get().getData()) ;
+    return ResponseEntity.ok().contentType(back.get().getType()).body(back.get().getData()) ;
   }
   @RequestMapping(value = "/images/{id}", method = RequestMethod.DELETE)
   public ResponseEntity<?> deleteImage(@PathVariable("id") long id) {
+    System.err.println(id) ;
     Optional<Image> back = imageDao.retrieve(id) ;
     if (back.isEmpty())
       return ResponseEntity.notFound().build() ;
     imageDao.delete(back.get());
-    return ResponseEntity.ok().contentType(MediaType.TEXT_HTML).build() ;
+    return ResponseEntity.ok().build() ;
   }
   @RequestMapping(value = "/images", method = RequestMethod.POST)
   public ResponseEntity<?> addImage(@RequestParam("file") MultipartFile file,
       RedirectAttributes redirectAttributes) {
-      if (!file.getContentType().equals("image/jpeg")){
+      if (! (file.getContentType().equals("image/jpeg") || file.getContentType().equals("image/tiff"))){
         System.err.println("pas jpeg ... : "+file.getContentType()) ;
         return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).build() ;
       }
@@ -72,12 +77,13 @@ public class ImageController {
         BufferedImage image = ImageIO.read(file.getInputStream());
         long height = (long) image.getHeight();
         long width = (long) image.getWidth();
-        Image img = new Image(file.getResource().getFilename(), file.getBytes(), width, height) ;
+        MimeType type = MimeType.valueOf(file.getContentType()) ;
+        Image img = new Image(file.getResource().getFilename(), file.getBytes(), width, height, new MediaType(type.getType(), type.getSubtype())) ;
         imageDao.create(img);
       }catch (IOException e){
         System.err.println("Erreur de lecture du fichier ...") ;
         e.printStackTrace();
-        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).build() ; 
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).build() ;
       }
     return ResponseEntity.ok().build() ;
   }
@@ -86,7 +92,7 @@ public class ImageController {
   public ArrayNode getImageList() {
     ArrayNode nodes = mapper.createArrayNode();
     for (Image img: imageDao.retrieveAll()){
-      nodes.add(mapper.valueToTree(new ImageInfos(img.getName(), img.getId(), img.getWidth(), img.getHeight()))) ;
+      nodes.add(mapper.valueToTree(new ImageInfos(img.getName(), img.getId(), img.getWidth(), img.getHeight(), img.getType()))) ;
     }
     return nodes;
   }
@@ -95,7 +101,26 @@ public class ImageController {
     Optional<Image> back = imageDao.retrieve(id) ;
     if (back.isEmpty())
       return ResponseEntity.notFound().build() ;
-    JsonNode node = mapper.valueToTree(new ImageInfos(back.get().getName(), back.get().getId(), back.get().getWidth(), back.get().getHeight())) ;
+    JsonNode node = mapper.valueToTree(new ImageInfos(back.get().getName(), back.get().getId(), back.get().getWidth(), back.get().getHeight(), back.get().getType())) ;
     return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(node);
+    /*
+    try {
+      File file = imgFile.getFile() ;
+      final Img<UnsignedByteType> input = (Img<UnsignedByteType>) imgOpener.openImgs(file.getAbsolutePath(), factory).get(0);
+      imgOpener.context().dispose();
+      GrayLevelProcessing.changeLuminosityCursorClassic(input, 50);
+      File path = new File (file.getParent() + "/vmodif.jpg") ;
+      // clear the file if it already exists.
+      if (path.exists()) {
+        path.delete();
+      }
+      ImgSaver imgSaver = new ImgSaver();
+      imgSaver.saveImg(path.getAbsolutePath(), input);
+      imgSaver.context().dispose();
+      System.out.println("okok ; enregistré en " + path.getAbsolutePath()) ;
+    } catch (IOException e) {
+      System.err.println("error") ;
+    }
+    */
   }
 }

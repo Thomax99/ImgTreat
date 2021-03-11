@@ -11,7 +11,7 @@ public interface Dao<T> {
 
   List<T> retrieveAll();
 
-  Optional<T> update(final T t, final String[] params);
+  void update(final T t, final String[] params);
 
   void delete(final T t);
 }
