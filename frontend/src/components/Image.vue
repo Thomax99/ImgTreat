@@ -5,6 +5,7 @@
       download=""><button >Télécharger l'image</button></a>
     <button v-on:click="callback()">Changer l'image</button>
     <button v-on:click="callback2()">Supprimer l'image</button>
+    <button v-on:click="increaseLuminosity()">Augmenter la luminosité</button>
     <section>
         <img id="imgDownloaded" />
     </section>
@@ -12,7 +13,7 @@
 </template>
 <script>
 
-import { callRestServiceGetImg, callRestServiceGetInfoImg } from '../http-api'
+import { callRestServiceIncreaseLuminosity, callRestServiceGetImg, callRestServiceGetInfoImg } from '../http-api'
 
 export default {
   name: 'Image',
@@ -28,7 +29,7 @@ export default {
       width: 0,
       name: '',
       height: 0,
-      idSelected: -1
+      idSelected: -1,
     }
   },
   methods: {
@@ -49,8 +50,8 @@ export default {
       document.querySelector('#imgDownloaded').setAttribute('height', this.imgHeight)
       document.querySelector('#imgDownloaded').setAttribute('width', this.imgHeight * this.width / this.height)
     },
-    downloadImg () {
-      
+    increaseLuminosity () {
+      callRestServiceIncreaseLuminosity(this.idSelected, this.setSrcImg, (e) => { console.log(e)})
     }
   }
 }

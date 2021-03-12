@@ -4,15 +4,10 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import io.scif.img.ImgOpener ;
-import io.scif.img.ImgSaver ;
+import java.security.InvalidAlgorithmParameterException;
+
 import org.springframework.core.io.ClassPathResource;
 
-import net.imglib2.img.array.ArrayImgs;
-import net.imglib2.img.array.ArrayImgFactory;
-import net.imglib2.img.basictypeaccess.array.ByteArray;
-
-import net.imglib2.img.Img;
 
 import java.util.List;
 import java.util.Optional;
@@ -38,17 +33,13 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import net.imglib2.type.numeric.integer.UnsignedByteType;
 
+import pdl.lib.EntryPointImageProcessing;
 import pdl.lib.GrayLevelProcessing;
+import pdl.lib.exception.NonExistingAlgorithmException;
+import pdl.lib.exception.NonExistingParameterException;
 
 import org.springframework.util.MimeType ;
-
-import io.scif.formats.JPEGFormat ;
-import io.scif.Reader ;
-import org.scijava.io.location.Location ;
-import org.scijava.io.location.BytesLocation ;
-
 @RestController
 public class ImageController {
 
@@ -71,38 +62,17 @@ public class ImageController {
       // pas d'algo : requete get simple
       return ResponseEntity.ok().contentType(back.get().getType()).body(back.get().getData()) ;
     }
-    // ici algo non nul
-    if (param1 == null && param2 != null){
+    byte[] backData = null ;
+    try {
+      backData =  EntryPointImageProcessing.algorithmEntryPoint(back.get(), new String [] {algorithm, param1, param2}) ;
+    } catch (InvalidAlgorithmParameterException e) {
+      return ResponseEntity.badRequest().build() ;
+    } catch (NonExistingAlgorithmException e) {
+      return ResponseEntity.badRequest().build() ;
+    } catch (NonExistingParameterException e) {
       return ResponseEntity.badRequest().build() ;
     }
-    if (algorithm.equals("increaseLuminosity")){
-      String[] strs = param1.split("=") ;
-      if (strs[0].equals("gain")){
-        try {
-          BytesLocation loc = new BytesLocation(back.get().getData(), back.get().getName()) ;
-          BytesLocation locBack = new BytesLocation(back.get().getData().length, "modif."+back.get().getType().getSubtype()) ;
-          ArrayImgFactory<UnsignedByteType> factory = new ArrayImgFactory<>(new UnsignedByteType ()) ;
-          ImgOpener imgOpener = new ImgOpener() ;
-          Img<UnsignedByteType> input = (Img<UnsignedByteType>) imgOpener.openImgs(loc, factory).get(0) ;
-          imgOpener.context().dispose() ;
-          System.out.println(input) ;
-          GrayLevelProcessing.changeLuminosityRandomAccessVerifColored(input, 50);
-          System.out.println("ok") ;
-          ImgSaver saver = new ImgSaver() ;
-          saver.saveImg(locBack, input) ;
-          saver.context().dispose() ;
-          byte[] backData = locBack.getByteBank().toByteArray() ;
-          return ResponseEntity.ok().contentType(back.get().getType()).body(backData) ;
-        } catch (NumberFormatException e) {
-          return ResponseEntity.badRequest().build() ;
-        } catch (Exception e) { // really really ugggggggglyyyyyy
-          e.printStackTrace();
-          System.out.println("here") ;
-          return ResponseEntity.badRequest().build() ;
-        }
-      }
-    }
-    return ResponseEntity.ok().contentType(back.get().getType()).body(back.get().getData()) ;
+    return ResponseEntity.ok().contentType(back.get().getType()).body(backData) ;
   }
   @RequestMapping(value = "/images/{id}", method = RequestMethod.DELETE)
   public ResponseEntity<?> deleteImage(@PathVariable("id") long id) {
