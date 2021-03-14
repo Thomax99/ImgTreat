@@ -57,12 +57,17 @@ function callRestServiceDeleteImg (id, callbackError) {
  * @param {*} callbackError The function called where there is a problem. This function take the error on parameter
  */
 function callRestServicePostImg (data, callback, callbackError) {
+  console.log(data)
   axios.post('/images',
     data
   ).then(function () {
-    callback()
+    if (callback != null) {
+        callback()
+    }
   }).catch ((e) => {
-    callbackError(e)
+    if (callbackError != null) {
+      callbackError(e)
+    }
   })
 }
 

@@ -12,6 +12,8 @@
 <script>
 
 import { callRestServiceGetLstImg, callRestServiceGetImg } from '../http-api'
+import Jimp from 'jimp'
+
 export default {
   name: 'Gallery',
   props: {
@@ -30,7 +32,25 @@ export default {
       callRestServiceGetLstImg(this.updateImage, this.callbackError)
     },
     updateOneImage (data) {
-      document.querySelector('#img' + data.id + '').setAttribute('src', data.result)
+      if (data.type.subtype === 'tiff') {
+        Jimp.read(data.result, function (err, file) {
+          if (err) {
+            console.log(err)
+          } else {
+            file.getBase64('image/png', (err, b64) => {
+              if (err) {
+                console.log(err)
+              }
+              else {
+                document.querySelector('#img' + data.id + '').setAttribute('src', b64)
+              }
+            })
+          }
+        })
+      }
+      else {
+        document.querySelector('#img' + data.id + '').setAttribute('src', data.result)
+      }
       document.querySelector('#img' + data.id + '').setAttribute('height', this.imgHeight)
       document.querySelector('#img' + data.id + '').setAttribute('width', this.imgHeight * data.width / data.height)
       if (data.id === this.response[this.response.length-1].id) {
@@ -46,10 +66,12 @@ export default {
         const image = this.response[i]
         const width = image.width
         const height = image.height
+        const type = image.type
         const data = {
           id: image.id,
           width: width,
-          height: height
+          height: height,
+          type: type
         }
         document.querySelector('#img' + image.id + '').setAttribute('alt', image.id)
         callRestServiceGetImg(image.id, this.updateOneImage, data, this.callbackError)

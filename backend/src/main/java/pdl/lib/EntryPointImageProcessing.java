@@ -35,7 +35,7 @@ public class EntryPointImageProcessing {
                 ImgOpener imgOpener = new ImgOpener() ;
                 Img<UnsignedByteType> input = (Img<UnsignedByteType>) imgOpener.openImgs(loc, factory).get(0) ;
                 imgOpener.context().dispose() ;
-                GrayLevelProcessing.changeLuminosityRandomAccessVerifColored(input, 50);
+                GrayLevelProcessing.changeLuminosityCursorClassic(input, gain);
                 ImgSaver saver = new ImgSaver() ;
                 saver.saveImg(locBack, input) ;
                 saver.context().dispose() ;

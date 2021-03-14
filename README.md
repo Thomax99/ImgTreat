@@ -2,6 +2,9 @@
 
 ## TODO
 
+- Faire passer les tests
+- Faire une grosse documentation
+- Permettre de lire les images .tiff
 - Initialisation d'un ensemble d'images présentes sur le serveur
 - Gérer les images présentes sur le serveur
 - Appliquer un algorithme de traitement d'image

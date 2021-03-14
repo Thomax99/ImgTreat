@@ -49,6 +49,7 @@ export default {
     },
     submitFile () {
       const formData = new FormData()
+      console.log(this.file)
       formData.append('file', this.file)
       callRestServicePostImg(formData, this.callbackSubmitFile, this.callbackError)
     },

@@ -25,9 +25,15 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import net.imglib2.img.Img;
+import net.imglib2.type.numeric.integer.UnsignedByteType;
+import net.imglib2.img.array.ArrayImgFactory;
 
 
 import org.springframework.mock.web.MockMultipartFile;
+import org.scijava.io.ByteArrayByteBank ;
+import org.scijava.io.location.BytesLocation ;
+import io.scif.img.ImgSaver ;
 
 
 @SpringBootTest
@@ -42,12 +48,20 @@ public class ImageControllerTests {
 	@Test
 	@Order(1)
 	public void createImageShouldReturnSuccess() throws Exception {
-		final ClassPathResource imgFile = new ClassPathResource("test1.jpg");
-        byte [] fileContent = Files.readAllBytes(imgFile.getFile().toPath());
+		final ArrayImgFactory< UnsignedByteType > factory = new ArrayImgFactory< UnsignedByteType >();
+		final long[] dimensions = new long[] { 400, 320 };
+		final UnsignedByteType type = new UnsignedByteType();
+		final Img< UnsignedByteType > img = factory.create( dimensions, type );
+		BytesLocation locBack = new BytesLocation(new ByteArrayByteBank(), "modif.jpg") ;
+		ImgSaver saver = new ImgSaver() ;
+		saver.saveImg(locBack, img) ;
+		saver.context().dispose() ;
+
+        byte [] fileContent = locBack.getByteBank().toByteArray() ;
 		MockMultipartFile mpf = new MockMultipartFile(
 			"file", 
 			"hello.jpeg", 
-			MediaType.IMAGE_JPEG_VALUE, 
+			MediaType.IMAGE_JPEG_VALUE,
 			fileContent
 		  );
 		  mockMvc.perform(multipart("/images").file(mpf)).andExpect(status().isOk()) ;
@@ -90,13 +104,17 @@ public class ImageControllerTests {
 	@Test
 	@Order(6)
 	public void getImageShouldReturnSuccess() throws Exception {
-		mockMvc.perform(get("/images/1")).andExpect(status().isOk()) ;
+		String ind = mockMvc.perform(get("/images")).andReturn().getResponse().getContentAsString().split(",")[0].split(":")[1] ; //recup a correct indice
+
+		mockMvc.perform(get("/images/"+ind)).andExpect(status().isOk()).andDo(print()) ;
 	}
 
 	@Test
 	@Order(7)
 	public void getImageInfosShouldReturnSuccess() throws Exception {
-	mockMvc.perform(get("/images/infos/1")).andExpect(status().isOk()) ;
+	String ind = mockMvc.perform(get("/images")).andReturn().getResponse().getContentAsString().split(",")[0].split(":")[1] ; //recup a correct indice
+
+	mockMvc.perform(get("/images/infos/"+ind)).andExpect(status().isOk()) ;
 	}
 	@Test
 	@Order(8)
@@ -121,7 +139,7 @@ public class ImageControllerTests {
 	@Test
 	@Order(11)
 	public void deleteImageShouldReturnSuccess() throws Exception {
-		// if doesn't work, change 1 on 0
-		mockMvc.perform(delete("/images/1")).andExpect(status().isOk()) ;
+		String ind = mockMvc.perform(get("/images")).andReturn().getResponse().getContentAsString().split(",")[0].split(":")[1] ; //recup a correct indice
+		mockMvc.perform(delete("/images/"+ind)).andExpect(status().isOk()) ;
 	}
 }
